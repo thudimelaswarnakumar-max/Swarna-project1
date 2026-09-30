@@ -1,0 +1,10 @@
+backend/venv/
+backend/.env
+__pycache__/
+*.pyc
+frontend/node_modules/
+frontend/.expo/
+frontend/dist/
+frontend/web-build/
+.DS_Store
+Thumbs.dbg
