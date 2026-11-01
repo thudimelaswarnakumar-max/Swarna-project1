@@ -2,13 +2,30 @@
 from fastapi import FastAPI
 from pydantic import BaseModel
 from database import get_connection
+from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
 
+# --------------------------------
+# CORS CONFIGURATION
+# --------------------------------
 
-# -----------------------------
-# Student Model
-# -----------------------------
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:8081",
+        "http://127.0.0.1:8081"
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+
+# --------------------------------
+# STUDENT MODEL
+# --------------------------------
+
 class Student(BaseModel):
     name: str
     branch: str
@@ -17,9 +34,10 @@ class Student(BaseModel):
     internships: int
 
 
-# -----------------------------
-# Home
-# -----------------------------
+# --------------------------------
+# HOME
+# --------------------------------
+
 @app.get("/")
 def home():
     return {
@@ -27,9 +45,10 @@ def home():
     }
 
 
-# -----------------------------
-# Register Student
-# -----------------------------
+# --------------------------------
+# REGISTER STUDENT
+# --------------------------------
+
 @app.post("/students")
 def create_student(student: Student):
 
@@ -37,7 +56,8 @@ def create_student(student: Student):
     cursor = connection.cursor()
 
     query = """
-        INSERT INTO students (name, branch, cgpa, projects, internships)
+        INSERT INTO students
+        (name, branch, cgpa, projects, internships)
         VALUES (%s, %s, %s, %s, %s)
         RETURNING id;
     """
@@ -66,9 +86,10 @@ def create_student(student: Student):
     }
 
 
-# -----------------------------
-# Get Questions
-# -----------------------------
+# --------------------------------
+# GET QUESTIONS
+# --------------------------------
+
 @app.get("/questions")
 def get_questions():
 
@@ -109,18 +130,20 @@ def get_questions():
     }
 
 
-# -----------------------------
-# Assessment Model
-# -----------------------------
+# --------------------------------
+# ASSESSMENT MODEL
+# --------------------------------
+
 class Assessment(BaseModel):
     student_id: int
     skill: str
     answers: dict
 
 
-# -----------------------------
-# Submit Assessment
-# -----------------------------
+# --------------------------------
+# SUBMIT INDIVIDUAL ASSESSMENT
+# --------------------------------
+
 @app.post("/assessments")
 def submit_assessment(assessment: Assessment):
 
@@ -191,9 +214,12 @@ def submit_assessment(assessment: Assessment):
         "percentage": percentage,
         "level": level
     }
-# -----------------------------
-# Get Student Assessment Results
-# -----------------------------
+
+
+# --------------------------------
+# GET STUDENT ASSESSMENT RESULTS
+# --------------------------------
+
 @app.get("/students/{student_id}/assessments")
 def get_student_assessments(student_id: int):
 
@@ -227,9 +253,12 @@ def get_student_assessments(student_id: int):
         "student_id": student_id,
         "assessments": result
     }
-# -----------------------------
-# Skill Gap Analysis
-# -----------------------------
+
+
+# --------------------------------
+# SKILL GAP ANALYSIS
+# --------------------------------
+
 @app.get("/students/{student_id}/skill-gaps")
 def get_skill_gaps(student_id: int):
 
@@ -280,16 +309,20 @@ def get_skill_gaps(student_id: int):
         "student_id": student_id,
         "skill_gaps": skill_gaps
     }
-# -----------------------------
-# Complete Assessment
-# -----------------------------
-# -----------------------------
-# Complete Assessment
-# -----------------------------
+
+
+# --------------------------------
+# COMPLETE ASSESSMENT MODEL
+# --------------------------------
+
 class CompleteAssessment(BaseModel):
     student_id: int
     answers: dict
 
+
+# --------------------------------
+# COMPLETE ASSESSMENT
+# --------------------------------
 
 @app.post("/complete-assessment")
 def complete_assessment(assessment: CompleteAssessment):
@@ -298,9 +331,15 @@ def complete_assessment(assessment: CompleteAssessment):
     cursor = connection.cursor()
 
     # Get only the questions answered by the student
-    question_ids = [int(id) for id in assessment.answers.keys()]
+    question_ids = [
+        int(question_id)
+        for question_id in assessment.answers.keys()
+    ]
 
     if not question_ids:
+        cursor.close()
+        connection.close()
+
         return {
             "message": "No answers submitted"
         }
@@ -387,13 +426,12 @@ def complete_assessment(assessment: CompleteAssessment):
         "student_id": assessment.student_id,
         "results": results
     }
-# -----------------------------
-# Get Assessment Questions
-# -----------------------------
-@app.get("/assessment-questions")
-# -----------------------------
-# Get Assessment Questions
-# -----------------------------
+
+
+# --------------------------------
+# GET ASSESSMENT QUESTIONS
+# --------------------------------
+
 @app.get("/assessment-questions")
 def get_assessment_questions():
 
