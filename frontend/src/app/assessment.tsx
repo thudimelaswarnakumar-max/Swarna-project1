@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
+import API_URL from '../api';
 import {
   StyleSheet,
   Text,
@@ -39,7 +40,7 @@ export default function AssessmentScreen() {
   const fetchQuestions = async () => {
     try {
       const response = await fetch(
-        'https://placement-analyzer-api-drmt.onrender.com/assessment-questions'
+        `${API_URL}/assessment-questions`
       );
 
       const data = await response.json();
@@ -91,7 +92,7 @@ export default function AssessmentScreen() {
     }
 
     const response = await fetch(
-      'https://placement-analyzer-api-drmt.onrender.com/complete-assessment',
+      `${API_URL}/complete-assessment`,
       {
         method: 'POST',
         headers: {
@@ -325,4 +326,3 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
 });
-

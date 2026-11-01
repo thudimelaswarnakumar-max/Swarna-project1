@@ -20,6 +20,7 @@ export default function RegisterScreen() {
   const [cgpa, setCgpa] = useState('');
   const [projects, setProjects] = useState('');
   const [internships, setInternships] = useState('');
+  const [isRegistering, setIsRegistering] = useState(false);
 
   const registerStudent = async () => {
     if (!name || !branch || !cgpa || !projects || !internships) {
@@ -30,19 +31,19 @@ export default function RegisterScreen() {
       return;
     }
 
+    setIsRegistering(true);
+
     try {
       const response = await fetch(
-        'https://placement-analyzer-api-drmt.onrender.com/students',
+        `${API_URL}/students`,
         {
           method: 'POST',
-
           headers: {
             'Content-Type': 'application/json',
           },
-
           body: JSON.stringify({
-            name: name,
-            branch: branch,
+            name,
+            branch,
             cgpa: Number(cgpa),
             projects: Number(projects),
             internships: Number(internships),
@@ -51,32 +52,28 @@ export default function RegisterScreen() {
       );
 
       const data = await response.json();
-      Alert.alert(
-  'Backend Response',
-  JSON.stringify(data)
-);
       if (response.ok) {
-  const studentId = data.student_id;
-  await AsyncStorage.setItem(
-  'student_id',
-  String(studentId)
-);
+        const studentId = data.student_id;
+        if (studentId === undefined || studentId === null) {
+          Alert.alert(
+            'Registration Failed',
+            'The backend did not return a student ID. Please try again.'
+          );
+          return;
+        }
 
-  Alert.alert(
-    'Registration Successful',
-    `Student ID: ${studentId}`
-  );
+        await AsyncStorage.setItem('student_id', String(studentId));
+        Alert.alert('Registration Successful', `Student ID: ${studentId}`);
 
-  setName('');
-  setBranch('');
-  setCgpa('');
-  setProjects('');
-  setInternships('');
-}
-       else {
+        setName('');
+        setBranch('');
+        setCgpa('');
+        setProjects('');
+        setInternships('');
+      } else {
         Alert.alert(
           'Registration Failed',
-          JSON.stringify(data)
+          data.detail || data.message || 'Please check your information and try again.'
         );
       }
     } catch (error) {
@@ -84,6 +81,8 @@ export default function RegisterScreen() {
         'Connection Error',
         'Could not connect to the backend.'
       );
+    } finally {
+      setIsRegistering(false);
     }
   };
 
@@ -159,11 +158,12 @@ export default function RegisterScreen() {
       />
 
       <TouchableOpacity
-        style={styles.button}
+        style={[styles.button, isRegistering && styles.disabledButton]}
         onPress={registerStudent}
+        disabled={isRegistering}
       >
         <Text style={styles.buttonText}>
-          Register Student
+          {isRegistering ? 'Registering...' : 'Register Student'}
         </Text>
       </TouchableOpacity>
 
@@ -212,10 +212,13 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
 
+  disabledButton: {
+    opacity: 0.6,
+  },
+
   buttonText: {
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: 'bold',
   },
 });
-
